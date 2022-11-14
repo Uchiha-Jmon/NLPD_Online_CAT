@@ -21,7 +21,7 @@ st.set_page_config(page_title="Translation Assistant", page_icon=None, layout="w
 
 
 def app_File():
-    st.title("TRANSLATION ASSIST DEMO APPLICATION")
+    st.title("TRANSLATION ASSISTANT DEMO APPLICATION")
     st.write("English to Urdu")
     uploaded_file = None
     uploaded_file = st.file_uploader("Choose File for Translation")
@@ -102,12 +102,20 @@ def app_File():
                         sorted_ld_en = sorted(ld_en, reverse = True)
                         # variable to save 3 closest translations
                         en_string_meaning = ""
-                        for count, value in enumerate(sorted_ld_en):    # for each value in sorted ld score list
-                            if count > 2:                               # counter to get only first three elements
-                                break;
+                        # variable to iterate over score list
+                        count_three_elements = 0
+                        # variable to keep track that next fetched string is not similar to the previous one
+                        repeat_meaning = ""
+                        for value in sorted_ld_en:              # for each value in score list
+                            if count_three_elements < 3:        # check if counter variable is less than 3
+                                if ur_data[ld_en.index(value)] != repeat_meaning:       # if current fetched meaning is not similar to previously fetched
+                                    en_string_meaning = en_string_meaning + " *** " + ur_data[ld_en.index(value)]   # concatenate fetched strings
+                                    repeat_meaning = ur_data[ld_en.index(value)]    # add fetched string in check variable
+                                    count_three_elements += 1                       # increment counter
+                                else:
+                                    continue;                   # continue if strings matched previously fetched value
                             else:
-                                # fetch top 3 closest urdu translations and save in variable
-                                en_string_meaning = en_string_meaning + " *** " + ur_data[ld_en.index(value)]
+                                break;                          # break loop when three unique values are fetched
                         
                         st.write(en_translation_data[st.session_state.keyI] + ": " + en_string_meaning)
                         # display fetched closest urdu translations
@@ -146,7 +154,7 @@ def app_File():
 
 
 def app_Word():
-    st.title("TRANSLATION ASSIST DEMO APPLICATION")
+    st.title("TRANSLATION ASSISTANT DEMO APPLICATION")
     st.write("English to Urdu")
 
     # read parallel en-ur data files 
@@ -158,7 +166,7 @@ def app_Word():
 
     
     if en_translation_data is not "":        
-                    
+            st.write('Suggested Urdu Translation')
             # check if English string is present in data
             if en_translation_data.lower() in en_data:
             
@@ -173,7 +181,38 @@ def app_Word():
                 
                 # display translations of english string
                 st.write(en_translation_data + ": " + en_string_meaning,+ str())
-            st.write('Suggested Urdu Translation')
+            
+            
+            else:   # if matched string not found (find closest translations using levenshtein distance (fuzzy logic)
+                        # levenshtein_distance (ld)
+                        ld_en = []                  # list to save ld score measured against each string in database
+                        sorted_ld_en = []           # list to save sorted(descending order) ld score
+                        for en_string in en_data:   # for each string in En database
+                            # append ld score against current En Text
+                            ld_en.append(fuzz.token_sort_ratio(en_translation_data[st.session_state.keyI].lower(), en_string))
+                        # sort list
+                        sorted_ld_en = sorted(ld_en, reverse = True)
+                        # variable to save 3 closest translations
+                        en_string_meaning = ""
+                        # variable to iterate over score list
+                        count_three_elements = 0
+                        # variable to keep track that next fetched string is not similar to the previous one
+                        repeat_meaning = ""
+                        for value in sorted_ld_en:              # for each value in score list
+                            if count_three_elements < 3:        # check if counter variable is less than 3
+                                if ur_data[ld_en.index(value)] != repeat_meaning:       # if current fetched meaning is not similar to previously fetched
+                                    en_string_meaning = en_string_meaning + " *** " + ur_data[ld_en.index(value)]   # concatenate fetched strings
+                                    repeat_meaning = ur_data[ld_en.index(value)]    # add fetched string in check variable
+                                    count_three_elements += 1                       # increment counter
+                                else:
+                                    continue;                   # continue if strings matched previously fetched value
+                            else:
+                                break;                          # break loop  three unique values are fetched
+                        
+                        st.write(en_translation_data[st.session_state.keyI] + ": " + en_string_meaning)
+                        # display fetched closest urdu translations
+                        st.session_state.en_text_translation = en_string_meaning
+            
             # remove stop words and punctuations from english string and split remaining string to get main words of string
             en_main_words_string = re.sub(r'[^\w\s]', '', remove_stopwords(en_translation_data.lower()))
             en_main_words = en_main_words_string.split()
